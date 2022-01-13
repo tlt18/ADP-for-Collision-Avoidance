@@ -185,16 +185,16 @@ class MyEnv(gym.Env):
 
         # 首先判断是否碰撞
         if safe_gap <= 0.1:  # 有改动
-            reward = -80000
+            reward = torch.tensor(-80000)
             done = True
 
-            self.observation = torch.tensor([u_ego_1, self.action, d_long, u_rela])
+            self.observation = torch.tensor([u_ego_1, self.action, d_long, u_rela],dtype = torch.float32)
             self.state = self.observation
             return (self.state - self.low_state )/ (self.high_state - self.low_state), reward, done, {}
 
         # 自车速度为0后done掉
         if u_ego_1 <= 0.5:  # 有改动
-            reward = 0
+            reward = torch.tensor(0)
             done = True
 
             #reward = 0
@@ -209,7 +209,7 @@ class MyEnv(gym.Env):
 
             #reward = r_d + r_time
 
-            self.observation = torch.tensor([u_ego_1, self.action, d_long, u_rela])
+            self.observation = torch.tensor([u_ego_1, self.action, d_long, u_rela],dtype = torch.float32)
             self.state = self.observation
             return (self.state - self.low_state )/ (self.high_state - self.low_state), reward, done, {}
 
@@ -221,7 +221,7 @@ class MyEnv(gym.Env):
 
         reward = 10 / ((u_ego_1 - 20 / 3.6) ** 2 + 0.1) - 1 * self.action ** 2
         #reward = 0
-        self.observation = torch.tensor([u_ego_1, self.action, d_long, u_rela])
+        self.observation = torch.tensor([u_ego_1, self.action, d_long, u_rela],dtype = torch.float32)
         self.state = self.observation
 
         return (self.state - self.low_state )/ (self.high_state - self.low_state), reward, done, {}
@@ -685,21 +685,21 @@ class MyEnv(gym.Env):
 
         # collision case
         if safe_gap <= 0.1:  # 有改动
-            reward = -80000
+            reward = torch.tensor(-80000)
             done = True
-            stateUpd = torch.tensor([u_ego_1, action, d_long, u_rela])
+            stateUpd = torch.tensor([u_ego_1, action, d_long, u_rela],dtype = torch.float32)
             return stateUpd / self.high_state, reward, done, {}
 
         # stop case
         if u_ego_1 <= 0.5:  # 有改动
-            reward = 0
+            reward = torch.tensor(0)
             done = True
-            stateUpd = torch.tensor([u_ego_1, action, d_long, u_rela])
+            stateUpd = torch.tensor([u_ego_1, action, d_long, u_rela],dtype = torch.float32)
             return stateUpd / self.high_state, reward, done, {}
 
         # normal case
         reward = 10 / ((u_ego_1 - 20 / 3.6) ** 2 + 0.1) - 1 * action ** 2
-        stateUpd = torch.tensor([u_ego_1, action, d_long, u_rela])
+        stateUpd = torch.tensor([u_ego_1, action, d_long, u_rela],dtype = torch.float32)
         return (stateUpd - self.low_state )/ (self.high_state - self.low_state), reward, done, {}
 
 

@@ -55,4 +55,4 @@ class Train():
         torch.nn.utils.clip_grad_norm_(value.parameters(), 10.0)
         policy.opt.step()
         policy.scheduler.step()
-        self.lossListPolicy = np.append(self.lossPolicy, lossPolicy.detach().numpy())
+        self.lossListPolicy = np.append(self.lossListPolicy, lossPolicy.detach().numpy())
