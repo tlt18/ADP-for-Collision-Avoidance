@@ -119,7 +119,8 @@ class MyEnv(gym.Env):
         self.T_count = count_wzs
         # print(count_wzs)
         # =====================================自车状态转移========================================================
-        self.action = action[0]  # 自车纵向加速度
+        # self.action = action[0]  # 自车纵向加速度
+        self.action = action
         delta_ego = 0  # 自车前轮转角
 
         x_ego_0 = self.x_ego  # 自车纵向位置
@@ -166,6 +167,7 @@ class MyEnv(gym.Env):
 
         # 纵距、相对速度
         d_long = x_other_1 - x_ego_1  # 纵距
+        d_long = torch.tensor([d_long], dtype = torch.float32)
         u_rela = u_other_1 - u_ego_1  # 纵向相对速度
         self.u_relate = u_rela
 
@@ -185,16 +187,16 @@ class MyEnv(gym.Env):
 
         # 首先判断是否碰撞
         if safe_gap <= 0.1:  # 有改动
-            reward = torch.tensor(-80000)
+            reward = torch.tensor([-80000],dtype = torch.float32)
             done = True
 
-            self.observation = torch.tensor([u_ego_1, self.action, d_long, u_rela],dtype = torch.float32)
+            self.observation = torch.cat([u_ego_1, self.action, d_long, u_rela])
             self.state = self.observation
             return (self.state - self.low_state )/ (self.high_state - self.low_state), reward, done, {}
 
         # 自车速度为0后done掉
         if u_ego_1 <= 0.5:  # 有改动
-            reward = torch.tensor(0)
+            reward = torch.tensor([0],dtype = torch.float32)
             done = True
 
             #reward = 0
@@ -209,7 +211,7 @@ class MyEnv(gym.Env):
 
             #reward = r_d + r_time
 
-            self.observation = torch.tensor([u_ego_1, self.action, d_long, u_rela],dtype = torch.float32)
+            self.observation = torch.cat([u_ego_1, self.action, d_long, u_rela])
             self.state = self.observation
             return (self.state - self.low_state )/ (self.high_state - self.low_state), reward, done, {}
 
@@ -221,7 +223,7 @@ class MyEnv(gym.Env):
 
         reward = 10 / ((u_ego_1 - 20 / 3.6) ** 2 + 0.1) - 1 * self.action ** 2
         #reward = 0
-        self.observation = torch.tensor([u_ego_1, self.action, d_long, u_rela],dtype = torch.float32)
+        self.observation = torch.cat([u_ego_1, self.action, d_long, u_rela])
         self.state = self.observation
 
         return (self.state - self.low_state )/ (self.high_state - self.low_state), reward, done, {}
@@ -645,12 +647,12 @@ class MyEnv(gym.Env):
 
     def Model(self, state, action):
         # update ego state
-        state = state * ( self.high_state - self.low_state ) + self.low_state
+        state_ = state * ( self.high_state - self.low_state ) + self.low_state
 
         delta_ego = 0  # 自车前轮转角
         x_ego_0 = 0  # 自车纵向位置，前车纵向距离直接取为两者距离差
         y_ego_0 = 0.0  # 自车的横向位置
-        u_ego_0 = state[0]  # 自车纵向速度
+        u_ego_0 = state_[0]  # 自车纵向速度
         v_ego_0 = 0.0  # 自车横向速度
         phi_ego_0 = 0.0  # 自车偏航角
         omega_ego_0 = 0.0  # 横摆角速度
@@ -663,9 +665,9 @@ class MyEnv(gym.Env):
         # update other state
         acc_other = 0.0
         delta_other = 0.0
-        x_other_0 = state[2]  # 前车纵向位置
+        x_other_0 = state_[2]  # 前车纵向位置
         y_other_0 = 0  # 前车的横向位置
-        u_other_0 = state[3] + state[0]  # 前车纵向速度
+        u_other_0 = state_[3] + state_[0]  # 前车纵向速度
         v_other_0 = 0  # 前车横向速度
         phi_other_0 = 0  # 前车偏航角
         omega_other_0 = 0  # 前车的横摆角速度
@@ -676,6 +678,7 @@ class MyEnv(gym.Env):
                                 acc_other, delta_other)
         # output state
         d_long = x_other_1 - x_ego_1  # 纵距
+        d_long = torch.tensor([d_long],dtype = torch.float32)
         u_rela = u_other_1 - u_ego_1  # 纵向相对速度
 
         # calculate reward
@@ -685,21 +688,22 @@ class MyEnv(gym.Env):
 
         # collision case
         if safe_gap <= 0.1:  # 有改动
-            reward = torch.tensor(-80000)
+            reward = torch.tensor([-80000],dtype = torch.float32)
             done = True
-            stateUpd = torch.tensor([u_ego_1, action, d_long, u_rela],dtype = torch.float32)
+            stateUpd = torch.cat([u_ego_1, action, d_long, u_rela])
             return stateUpd / self.high_state, reward, done, {}
 
         # stop case
         if u_ego_1 <= 0.5:  # 有改动
-            reward = torch.tensor(0)
+            reward = torch.tensor([0],dtype = torch.float32)
             done = True
-            stateUpd = torch.tensor([u_ego_1, action, d_long, u_rela],dtype = torch.float32)
+            stateUpd = torch.cat([u_ego_1, action, d_long, u_rela])
             return stateUpd / self.high_state, reward, done, {}
 
         # normal case
         reward = 10 / ((u_ego_1 - 20 / 3.6) ** 2 + 0.1) - 1 * action ** 2
-        stateUpd = torch.tensor([u_ego_1, action, d_long, u_rela],dtype = torch.float32)
+        
+        stateUpd = torch.cat([u_ego_1, action, d_long, u_rela])
         return (stateUpd - self.low_state )/ (self.high_state - self.low_state), reward, done, {}
 
 

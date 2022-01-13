@@ -5,8 +5,10 @@ from config import trainConfig
 class Train():
     def __init__(self, env):
         self.env = env
-        self.lossListValue = np.empty([0,1])
-        self.lossListPolicy = np.empty([0,1])
+        self.lossIteraValue = np.empty([0,1])
+        self.lossIteraPolicy = np.empty([0,1])
+        self.lossValue = []
+        self.lossPolicy = []
         self.state = None
         config = trainConfig()
         self.stepForward = config.stepForward
@@ -15,7 +17,7 @@ class Train():
         self.state = self.env.reset()
 
     def step(self, state, policy):
-        control = policy.forward(self.state)
+        control = policy.forward(self.state).detach()
         self.state, _, done, _ = self.env.step(control)
         return done
 
@@ -35,7 +37,7 @@ class Train():
         torch.nn.utils.clip_grad_norm_(value.parameters(), 10.0)
         value.opt.step()
         value.scheduler.step()
-        self.lossListValue = np.append(self.lossListValue, lossValue.detach().numpy())
+        self.lossIteraValue = np.append(self.lossIteraValue, lossValue.detach().numpy())
 
     def policyImprove(self, policy, value):
         for p in value.parameters():
@@ -55,4 +57,11 @@ class Train():
         torch.nn.utils.clip_grad_norm_(value.parameters(), 10.0)
         policy.opt.step()
         policy.scheduler.step()
-        self.lossListPolicy = np.append(self.lossListPolicy, lossPolicy.detach().numpy())
+        self.lossIteraPolicy = np.append(self.lossIteraPolicy, lossPolicy.detach().numpy())
+
+    def calLoss(self):
+        self.lossValue.append(self.lossIteraValue.mean())
+        self.lossPolicy.append(self.lossIteraPolicy.mean())
+        self.lossIteraValue = np.empty([0,1])
+        self.lossIteraPolicy = np.empty([0,1])
+        

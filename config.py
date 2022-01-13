@@ -1,7 +1,7 @@
 
 class trainConfig():
     def __init__(self):
-        self.iterationMax = 1000
+        self.iterationMax = 10
         self.iterationPrint = 10
         self.iterationSave = 200
         self.lrPolicy = 6e-4
