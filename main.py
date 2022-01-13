@@ -18,7 +18,7 @@ torch.manual_seed(0)
 
 env = MyEnv()
 env.seed(0)
-stateDim = env.observation_space.shape
+stateDim = env.observation_space.shape[0]
 actionDim = env.action_space.shape[0]
 policy = Actor(stateDim, actionDim, config.lrPolicy)
 value = Critic(stateDim, 1, config.lrValue)
@@ -30,23 +30,23 @@ if isTrain:
     iterationPIM = 1
     train = Train(env)
     iterarion = 0
-    lossListValue
+    lossListValue = 0
 
     while iterarion < config.iterationMax:
         # train
-        Train.reset()
+        train.reset()
         while True:
             # PEV
             if iterarion % iterationPEV == 0:
-                Train.policyEvaluate(policy, value)
+                train.policyEvaluate(policy, value)
             # PIM
             if iterarion % iterationPIM == 0:
-                Train.policyImprove(policy, value)
-            done = Train.step(policy, value)
+                train.policyImprove(policy, value)
+            done = train.step(policy, value)
             if done:
                 break
         if iterarion % config.iterationPrint:
-            print("iteration: {}, LossValue: {}, LossPolicy: {}".format(iterarion, Train.lossListValue[-1], Train.lossListPolicy[-1]))
+            print("iteration: {}, LossValue: {}, LossPolicy: {}".format(iterarion, train.lossListValue[-1], train.lossListPolicy[-1]))
         if iterarion % config.iterationSave:
             pass
         iterarion += 1

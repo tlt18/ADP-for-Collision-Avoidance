@@ -1,20 +1,22 @@
 import torch.nn as nn
+import torch
 import numpy as np
+from torch.nn import init
 
 
 class Actor(nn.Module):
     def __init__(self, inputSize, Outputsize, lr):
         super().__init__()
-        self._out_gain = PI / 9
-        self._norm_matrix = 0.1 * \
+        self._out_gain = 2
+        self._norm_matrix = 1 * \
             torch.tensor([1, 1, 1, 1], dtype=torch.float32)
         # NN
         self.layers = nn.Sequential(
-            nn.Linear(input_size, 256),
+            nn.Linear(inputSize, 256),
             nn.ELU(),
             nn.Linear(256, 256),
             nn.ELU(),
-            nn.Linear(256, output_size),
+            nn.Linear(256, Outputsize),
             nn.Tanh()
         )
         # optimizer
@@ -23,7 +25,7 @@ class Actor(nn.Module):
             self.opt, 100, gamma=0.9, last_epoch=-1)
         self._initializeWeights()
         # zeros state value
-        self._zero_state = torch.tensor([0.0, 0.0, 0.0, 0.0])
+        self._zero_state = torch.tensor([0.0, 0.0, 0.0, 0.0]) - 2
 
     def forward(self, x):
         temp = torch.mul(x, self._norm_matrix)
@@ -51,13 +53,13 @@ class Critic(nn.Module):
         super().__init__()
         # initial parameters of actor
         self.layers = nn.Sequential(
-            nn.Linear(input_size, 256),
+            nn.Linear(inputSize, 256),
             nn.ELU(),
             nn.Linear(256, 256),
             nn.ELU(),
             nn.Linear(256, 256),
             nn.ELU(),
-            nn.Linear(256, output_size),
+            nn.Linear(256, Outputsize),
             nn.ReLU()
         )
         self._norm_matrix = 0.1 * \

@@ -115,7 +115,7 @@ class MyEnv(gym.Env):
 
         self.state = self.observation
 
-        return self.state / self.high_state
+        return (self.state - self.low_state )/ (self.high_state - self.low_state)
 
     def step(self, action, count_wzs=0):
         self.T_count = count_wzs
@@ -192,7 +192,7 @@ class MyEnv(gym.Env):
 
             self.observation = np.array([u_ego_1, self.action, d_long, u_rela])
             self.state = self.observation
-            return self.state / self.high_state, reward, done, {}
+            return (self.state - self.low_state )/ (self.high_state - self.low_state), reward, done, {}
 
         # 自车速度为0后done掉
         if u_ego_1 <= 0.5:  # 有改动
@@ -213,7 +213,7 @@ class MyEnv(gym.Env):
 
             self.observation = np.array([u_ego_1, self.action, d_long, u_rela])
             self.state = self.observation
-            return self.state / self.high_state, reward, done, {}
+            return (self.state - self.low_state )/ (self.high_state - self.low_state), reward, done, {}
 
         # 速度惩罚项
         # r_speed = 10 if abs(u_ego_1 - 50 / 3.6) < 0.1 or abs(u_ego_1 - 0 / 3.6) < 0.1 else -10
@@ -226,7 +226,7 @@ class MyEnv(gym.Env):
         self.observation = np.array([u_ego_1, self.action, d_long, u_rela])
         self.state = self.observation
 
-        return self.state / self.high_state, reward, done, {}
+        return (self.state - self.low_state )/ (self.high_state - self.low_state), reward, done, {}
 
         # ========================================================================================================
 
@@ -647,7 +647,8 @@ class MyEnv(gym.Env):
 
     def Model(self, state, action):
         # update ego state
-        state = state * self.high_state
+        state = state * ( self.high_state - self.low_state ) + self.low_state
+
         delta_ego = 0  # 自车前轮转角
         x_ego_0 = 0  # 自车纵向位置，前车纵向距离直接取为两者距离差
         y_ego_0 = 0.0  # 自车的横向位置
@@ -700,8 +701,8 @@ class MyEnv(gym.Env):
 
         # normal case
         reward = 10 / ((u_ego_1 - 20 / 3.6) ** 2 + 0.1) - 1 * action ** 2
-        stateUpd = np.array([u_ego_1, self.action, d_long, u_rela])
-        return stateUpd / self.high_state, reward, done, {}
+        stateUpd = np.array([u_ego_1, action, d_long, u_rela])
+        return (stateUpd - self.low_state )/ (self.high_state - self.low_state), reward, done, {}
 
 
 def test_env():

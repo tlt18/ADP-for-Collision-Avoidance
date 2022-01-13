@@ -8,7 +8,7 @@ class Train():
         self.lossListValue = np.empty([0,1])
         self.lossListPolicy = np.empty([0,1])
         self.state = None
-        config = trainConfig
+        config = trainConfig()
         self.stepForward = config.stepForward
         
     def reset(self):
