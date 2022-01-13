@@ -8,7 +8,6 @@
 import math
 import numpy as np
 import gym
-import torch
 from gym import spaces
 from gym.utils import seeding
 from matplotlib import pyplot as plt

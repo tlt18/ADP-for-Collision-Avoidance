@@ -1,38 +1,58 @@
 import numpy as np
-import pytorch
+import torch
+from config import trainConfig
 
 class Train():
     def __init__(self, env):
         self.env = env
-        self.lossListValue = np.empty([0,1]) 
+        self.lossListValue = np.empty([0,1])
+        self.lossListPolicy = np.empty([0,1])
         self.state = None
-        self.stateNest = None
-
+        config = trainConfig
+        self.stepForward = config.stepForward
+        
     def reset(self):
         self.state = self.env.reset()
 
     def step(self, state, policy):
         control = policy.forward(self.state)
-        return self.env.step(control)
+        self.state, _, done, _ = self.env.step(control)
+        return done
 
     def policyEvaluate(self, policy, value):
-        control = policy.forward(self.state)
-        # [stateNext, reward, done, _] = self.env.Model(state, control)
-        [stateNext, reward, done, _] = self.env.step(control)
-        lossValue = torch.pow(value.forward(self.state) - reward.detach() - value.forward(stateNext).detach(), 2)
+        valuePredict = value(torch.from_numpy(self.state))
+        valueTarget = 0
+        with torch.no_grad():
+            stateNext = self.state
+            for i in range(self.stepForward):
+                control = policy.forward(torch.from_numpy(stateNext))
+                stateNext, reward, done, _ = self.env.Model(stateNext, control)
+                valueTarget += reward
+            valueTarget += (~done) * value(stateNext)
+        lossValue = torch.pow(valuePredict - valueTarget, 2)
         value.zero_grad()
         lossValue.backward()
         torch.nn.utils.clip_grad_norm_(value.parameters(), 10.0)
         value.opt.step()
         value.scheduler.step()
         self.lossListValue = np.append(self.lossListValue, lossValue.detach().numpy())
-        self.reward = reward
-
-        return self.lossListValue[-1], done
 
     def policyImprove(self, policy, value):
-        [stateNext, reward, done, _] = self.env.model(control)
-
-        pass
-
-        
+        for p in value.parameters():
+            p.requires_grad = False
+        stateNext = self.state
+        valueTarget = 0
+        for i in range(self.stepForward):
+            control = policy.forward(torch.from_numpy(stateNext))
+            stateNext, reward, done, _ = self.env.Model(stateNext, control)
+            valueTarget += reward
+        valueTarget += (~done) * value(stateNext)
+        for p in value.parameters():
+            p.requires_grad = True
+        policy.zero_grad()
+        lossPolicy = - valueTarget
+        lossPolicy.backward()
+        torch.nn.utils.clip_grad_norm_(value.parameters(), 10.0)
+        policy.opt.step()
+        policy.scheduler.step()
+        self.lossListPolicy = np.append(self.lossPolicy, lossPolicy.detach().numpy())
