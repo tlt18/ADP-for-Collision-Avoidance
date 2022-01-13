@@ -4,7 +4,7 @@
 道阻且长，行则将至，行而不辍，未来可期。
 """
 
-
+import torch
 import math
 import numpy as np
 import gym
@@ -67,10 +67,10 @@ class MyEnv(gym.Env):
         # 10/3.6               $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
         self.max_u_rela = 10 / 3.6
 
-        self.low_state = np.array([self.min_u_ego, self.min_acc_x, self.min_D_long, self.min_u_rela],
-                                  dtype=np.float32)
-        self.high_state = np.array([self.max_u_ego, self.max_acc_x, self.max_D_long, self.max_u_rela],
-                                   dtype=np.float32)
+        self.low_state = torch.tensor([self.min_u_ego, self.min_acc_x, self.min_D_long, self.min_u_rela],
+                                  dtype=torch.float32)
+        self.high_state = torch.tensor([self.max_u_ego, self.max_acc_x, self.max_D_long, self.max_u_rela],
+                                   dtype=torch.float32)
 
         self.viewer = None
 
@@ -79,16 +79,14 @@ class MyEnv(gym.Env):
                                        shape=(1,),
                                        dtype=np.float32)
 
-        self.observation_space = spaces.Box(low=self.low_state,
-                                            high=self.high_state,
+        self.observation_space = spaces.Box(low=self.low_state.numpy(),
+                                            high=self.high_state.numpy(),
                                             dtype=np.float32)
 
-        self.seed()
-        self.reset()
+        # self.reset()
 
-    def seed(self, seed=None):
-        self.np_random, seed = seeding.np_random(seed)
-        return [seed]
+    def seed(self, seed):
+        torch.manual_seed(seed)
 
     def reset(self):
         # 前车
@@ -108,10 +106,10 @@ class MyEnv(gym.Env):
         self.phi_ego = 0.0  # 自车偏航角
         self.omega_ego = 0.0  # 自车横摆角速度
         # 初始化状态
-        self.observation = np.array([self.u_ego_reset,  # 自车纵向速度(车辆坐标系)
+        self.observation = torch.tensor([self.u_ego_reset,  # 自车纵向速度(车辆坐标系)
                                      0.0,  # 自车纵向加速度（车辆坐标系）
                                      self.x_other - self.x_ego,  # 纵距 （大地坐标系）
-                                     self.u_other - self.u_ego_reset], dtype=np.float32)  # 初始相对速度
+                                     self.u_other - self.u_ego_reset], dtype=torch.float32)  # 初始相对速度
 
         self.state = self.observation
 
@@ -163,7 +161,7 @@ class MyEnv(gym.Env):
         self.x_ego = x_ego_1  # 自车纵向位置
         u_ego_old = self.u_ego_reset
 
-        self.u_ego_reset = np.clip(u_ego_1, 0, self.max_u_ego)  # 自车纵向速度
+        self.u_ego_reset = torch.clip(u_ego_1, 0, self.max_u_ego)  # 自车纵向速度
         u_ego_1 = self.u_ego_reset  # 这需要吗
 
         # 纵距、相对速度
@@ -190,7 +188,7 @@ class MyEnv(gym.Env):
             reward = -80000
             done = True
 
-            self.observation = np.array([u_ego_1, self.action, d_long, u_rela])
+            self.observation = torch.tensor([u_ego_1, self.action, d_long, u_rela])
             self.state = self.observation
             return (self.state - self.low_state )/ (self.high_state - self.low_state), reward, done, {}
 
@@ -211,7 +209,7 @@ class MyEnv(gym.Env):
 
             #reward = r_d + r_time
 
-            self.observation = np.array([u_ego_1, self.action, d_long, u_rela])
+            self.observation = torch.tensor([u_ego_1, self.action, d_long, u_rela])
             self.state = self.observation
             return (self.state - self.low_state )/ (self.high_state - self.low_state), reward, done, {}
 
@@ -223,7 +221,7 @@ class MyEnv(gym.Env):
 
         reward = 10 / ((u_ego_1 - 20 / 3.6) ** 2 + 0.1) - 1 * self.action ** 2
         #reward = 0
-        self.observation = np.array([u_ego_1, self.action, d_long, u_rela])
+        self.observation = torch.tensor([u_ego_1, self.action, d_long, u_rela])
         self.state = self.observation
 
         return (self.state - self.low_state )/ (self.high_state - self.low_state), reward, done, {}
@@ -661,7 +659,7 @@ class MyEnv(gym.Env):
                                 y_ego_0, u_ego_0, v_ego_0,\
                                 phi_ego_0, omega_ego_0,\
                                 action, delta_ego)
-        u_ego_1 = np.clip(u_ego_1, 0, self.max_u_ego) # 这里有点问题
+        u_ego_1 = torch.clip(u_ego_1, 0, self.max_u_ego) # 这里有点问题
         # update other state
         acc_other = 0.0
         delta_other = 0.0
@@ -689,19 +687,19 @@ class MyEnv(gym.Env):
         if safe_gap <= 0.1:  # 有改动
             reward = -80000
             done = True
-            stateUpd = np.array([u_ego_1, action, d_long, u_rela])
+            stateUpd = torch.tensor([u_ego_1, action, d_long, u_rela])
             return stateUpd / self.high_state, reward, done, {}
 
         # stop case
         if u_ego_1 <= 0.5:  # 有改动
             reward = 0
             done = True
-            stateUpd = np.array([u_ego_1, action, d_long, u_rela])
+            stateUpd = torch.tensor([u_ego_1, action, d_long, u_rela])
             return stateUpd / self.high_state, reward, done, {}
 
         # normal case
         reward = 10 / ((u_ego_1 - 20 / 3.6) ** 2 + 0.1) - 1 * action ** 2
-        stateUpd = np.array([u_ego_1, action, d_long, u_rela])
+        stateUpd = torch.tensor([u_ego_1, action, d_long, u_rela])
         return (stateUpd - self.low_state )/ (self.high_state - self.low_state), reward, done, {}
 
 

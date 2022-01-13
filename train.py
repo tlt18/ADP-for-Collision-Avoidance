@@ -20,12 +20,12 @@ class Train():
         return done
 
     def policyEvaluate(self, policy, value):
-        valuePredict = value(torch.from_numpy(self.state))
+        valuePredict = value(self.state)
         valueTarget = 0
         with torch.no_grad():
             stateNext = self.state
             for i in range(self.stepForward):
-                control = policy.forward(torch.from_numpy(stateNext))
+                control = policy.forward(stateNext)
                 stateNext, reward, done, _ = self.env.Model(stateNext, control)
                 valueTarget += reward
             valueTarget += (~done) * value(stateNext)
@@ -43,7 +43,7 @@ class Train():
         stateNext = self.state
         valueTarget = 0
         for i in range(self.stepForward):
-            control = policy.forward(torch.from_numpy(stateNext))
+            control = policy.forward(stateNext)
             stateNext, reward, done, _ = self.env.Model(stateNext, control)
             valueTarget += reward
         valueTarget += (~done) * value(stateNext)
