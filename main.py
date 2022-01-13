@@ -20,7 +20,7 @@ torch.manual_seed(0)
 env = MyEnv()
 env.seed(0)
 policy = Actor(inputSize, Outputsize, config.lrPolicy)
-value = Critic(inputSize, Outputsize, config.lrvalue)
+value = Critic(inputSize, Outputsize, config.lrValue)
 
 if isTrain:
     print("Start Training!")
