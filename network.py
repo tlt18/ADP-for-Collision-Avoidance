@@ -21,7 +21,7 @@ class Actor(nn.Module):
         self.opt = torch.optim.Adam(self.parameters(), lr=lr)
         self.scheduler = torch.optim.lr_scheduler.StepLR(
             self.opt, 100, gamma=0.9, last_epoch=-1)
-        self._initialize_weights()
+        self._initializeWeights()
         # zeros state value
         self._zero_state = torch.tensor([0.0, 0.0, 0.0, 0.0])
 
@@ -36,7 +36,7 @@ class Actor(nn.Module):
     def saveParameters(self, x):
         pass
 
-    def _initialize_weights(self):
+    def _initializeWeights(self):
         """
         initial parameter using xavier
         """
@@ -66,7 +66,7 @@ class Critic(nn.Module):
         self.opt = torch.optim.Adam(self.parameters(), lr=lr)
         self.scheduler = torch.optim.lr_scheduler.StepLR(
             self.opt, 100, gamma=0.9, last_epoch=-1)
-        self._initialize_weights()
+        self._initializeWeights()
         # zeros state value
         self._zero_state = torch.tensor([0.0, 0.0, 0.0, 0.0])
 
@@ -81,7 +81,7 @@ class Critic(nn.Module):
     def saveParameters(self, x):
         pass
 
-    def _initialize_weights(self):
+    def _initializeWeights(self):
         """
         initial paramete using xavier
         """

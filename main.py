@@ -26,15 +26,21 @@ if isTrain:
     print("Start Training!")
     iterationPrint = 10
     iterationSave = 200
+    iterationPEV = 1
+    iterationPIM = 1
     train = Train(env)
     iterarion = 0
 
     while iterarion < config.maxIteration:
         # train
-        state = Train.reset()
+        Train.reset()
         while True:
-            [state, reward, done, _] = Train.step(state)
             # PEV
+            if iterarion % iterationPEV == 0:
+                [lossListValue, done] = Train.policyEvaluate(policy, value)
+            # PIM
+            if iterarion % iterationPIM == 0:
+                Train.policyImprove(policy, value)
 
 
             while done:
