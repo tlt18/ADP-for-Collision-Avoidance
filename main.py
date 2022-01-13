@@ -6,6 +6,7 @@ import numpy as np
 import torch
 import matplotlib.pyplot as plt
 from datetime import datetime
+import os
 
 
 # mode setting
@@ -25,6 +26,7 @@ actionDim = env.action_space.shape[0]
 policy = Actor(stateDim, actionDim, config.lrPolicy)
 value = Critic(stateDim, 1, config.lrValue)
 log_dir = "./Results_dir/" + datetime.now().strftime("%Y-%m-%d-%H-%M-")
+os.makedirs(log_dir, exist_ok=True)
 
 if isTrain:
     print("Start Training!")
@@ -56,12 +58,12 @@ if isTrain:
             pass
         iterarion += 1
     plt.figure()
-    plt.plt(len(train.lossValue), train.lossValue)
+    plt.plot(range(len(train.lossValue)), train.lossValue)
     plt.xlabel('iteration')
     plt.ylabel('Value Loss')
-    plt.savefig(log_dir + 'value_loss.png')
+    plt.savefig(log_dir + '/value_loss.png')
     plt.figure()
-    plt.plt(len(train.lossPolicy), train.lossPolicy)
+    plt.plot(range(len(train.lossPolicy)), train.lossPolicy)
     plt.xlabel('iteration')
     plt.ylabel('Policy Loss')
-    plt.savefig(log_dir + 'policy_loss.png')
+    plt.savefig(log_dir + '/policy_loss.png')
