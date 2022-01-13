@@ -1,6 +1,7 @@
 from config import trainConfig
 from MyEnv import MyEnv
 from network import Actor, Critic
+from train import Train
 import numpy as np
 import torch
 
@@ -25,18 +26,20 @@ if isTrain:
     print("Start Training!")
     iterationPrint = 10
     iterationSave = 200
-    train = Train()
+    train = Train(env)
     iterarion = 0
 
     while iterarion < config.maxIteration:
         # train
-        state = env.reset()
+        state = Train.reset()
         while True:
-            [state, reward, done, _] = env.step(state)
+            [state, reward, done, _] = Train.step(state)
+            # PEV
 
 
+            while done:
+                pass
 
             pass
-            
 
         iterarion += 1
