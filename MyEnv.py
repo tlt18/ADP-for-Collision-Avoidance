@@ -161,7 +161,7 @@ class MyEnv(gym.Env):
 
         self.x_ego = x_ego_1  # 自车纵向位置
         u_ego_old = self.u_ego_reset
-
+        # TODO: 原来clip的原理
         self.u_ego_reset = torch.clip(u_ego_1, 0, self.max_u_ego)  # 自车纵向速度
         u_ego_1 = self.u_ego_reset  # 这需要吗
 
@@ -187,7 +187,7 @@ class MyEnv(gym.Env):
 
         # 首先判断是否碰撞
         if safe_gap <= 0.1:  # 有改动
-            reward = torch.tensor([-80000],dtype = torch.float32)
+            reward = torch.tensor([-80000],dtype = torch.float32) # TODO: reward的设计，不能求梯度
             done = True
 
             self.observation = torch.cat([u_ego_1, self.action, d_long, u_rela])
