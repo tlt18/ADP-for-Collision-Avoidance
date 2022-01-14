@@ -30,7 +30,7 @@ class Actor(nn.Module):
     def forward(self, x):
         temp = torch.mul(x, self._norm_matrix)
         x = torch.mul(self._out_gain, self.layers(temp)) - 1.5
-        return x
+        return x.reshape(x.size(0))
 
     def predict(self, x):
         return self.forward(x).detach().numpy()
@@ -60,7 +60,7 @@ class Critic(nn.Module):
             nn.Linear(256, 256),
             nn.ELU(),
             nn.Linear(256, Outputsize),
-            nn.ReLU()
+            # nn.ReLU()
         )
         self._norm_matrix = 0.1 * \
             torch.tensor([2, 5, 10, 10], dtype=torch.float32)
@@ -75,7 +75,7 @@ class Critic(nn.Module):
     def forward(self, x):
         x = torch.mul(x, self._norm_matrix)
         x = self.layers(x)
-        return x
+        return x.reshape(x.size(0))
 
     def predict(self, x):
         return self.forward(state).detach().numpy()

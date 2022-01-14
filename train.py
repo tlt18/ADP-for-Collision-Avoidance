@@ -10,8 +10,22 @@ class Train():
         self.lossValue = []
         self.lossPolicy = []
         self.state = None
+        self.reset()
         config = trainConfig()
         self.stepForward = config.stepForward
+        self.batchSize = config.batchSize
+        self.batchData = []
+
+    def sample(self, policy):
+        self.batchData = []
+        for i in range(self.batchSize):
+            self.batchData.append(self.state.clone())
+            control = policy(self.state).detach()
+            self.state, _, done, _ = self.env.step(control)
+            if done:
+                self.reset()
+        self.batchData = torch.cat(self.batchData,dim = 0).reshape(self.batchSize,-1)
+        
         
     def reset(self):
         self.state = self.env.reset()
@@ -22,16 +36,16 @@ class Train():
         return done
 
     def policyEvaluate(self, policy, value):
-        valuePredict = value(self.state)
-        valueTarget = 0
+        valuePredict = value(self.batchData)
+        valueTarget = torch.zeros(self.batchSize)
         with torch.no_grad():
-            stateNext = self.state
+            stateNext = self.batchData.clone()
             for i in range(self.stepForward):
                 control = policy.forward(stateNext)
                 stateNext, reward, done, _ = self.env.Model(stateNext, control)
                 valueTarget += reward
-            valueTarget += (1 - done) * value(stateNext)
-        lossValue = torch.pow(valuePredict - valueTarget, 2)
+            valueTarget += (~done) * value(stateNext)
+        lossValue = torch.pow(valuePredict - valueTarget, 2).mean()
         value.zero_grad()
         lossValue.backward()
         torch.nn.utils.clip_grad_norm_(value.parameters(), 10.0)
@@ -42,17 +56,17 @@ class Train():
     def policyImprove(self, policy, value):
         for p in value.parameters():
             p.requires_grad = False
-        stateNext = self.state
-        valueTarget = 0
+        stateNext = self.batchData
+        valueTarget = torch.zeros(self.batchSize)
         for i in range(self.stepForward):
             control = policy.forward(stateNext)
             stateNext, reward, done, _ = self.env.Model(stateNext, control)
             valueTarget += reward
-        valueTarget += (1 - done) * value(stateNext)
+        valueTarget += (~done) * value(stateNext)
         for p in value.parameters():
             p.requires_grad = True
         policy.zero_grad()
-        lossPolicy = - valueTarget
+        lossPolicy = - valueTarget.mean()
         lossPolicy.backward()
         torch.nn.utils.clip_grad_norm_(value.parameters(), 10.0)
         policy.opt.step()

@@ -29,27 +29,20 @@ log_dir = "./Results_dir/" + datetime.now().strftime("%Y-%m-%d-%H-%M-")
 
 if isTrain:
     print("Start Training!")
-
-    iterationPEV = 1
-    iterationPIM = 1
     train = Train(env)
     iterarion = 0
     lossListValue = 0
 
     while iterarion < config.iterationMax:
         # train
-        train.reset()
-        while True:
-            # PEV
-            if iterarion % iterationPEV == 0:
-                train.policyEvaluate(policy, value)
-            # PIM
-            if iterarion % iterationPIM == 0:
-                train.policyImprove(policy, value)
-            done = train.step(policy, value)
-            if done:
-                train.calLoss()
-                break
+        train.sample(policy)
+        # PEV
+        train.policyEvaluate(policy, value)
+        # PIM
+        train.policyImprove(policy, value)
+        done = train.step(policy, value)
+        train.calLoss()
+
         if iterarion % config.iterationPrint == 0:
             print("iteration: {}, LossValue: {}, LossPolicy: {}".format(
                 iterarion, train.lossValue[-1], train.lossPolicy[-1]))
