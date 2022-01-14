@@ -30,7 +30,7 @@ class Train():
                 control = policy.forward(stateNext)
                 stateNext, reward, done, _ = self.env.Model(stateNext, control)
                 valueTarget += reward
-            valueTarget += (~done) * value(stateNext)
+            valueTarget += (1 - done) * value(stateNext)
         lossValue = torch.pow(valuePredict - valueTarget, 2)
         value.zero_grad()
         lossValue.backward()
@@ -48,7 +48,7 @@ class Train():
             control = policy.forward(stateNext)
             stateNext, reward, done, _ = self.env.Model(stateNext, control)
             valueTarget += reward
-        valueTarget += (~done) * value(stateNext)
+        valueTarget += (1 - done) * value(stateNext)
         for p in value.parameters():
             p.requires_grad = True
         policy.zero_grad()

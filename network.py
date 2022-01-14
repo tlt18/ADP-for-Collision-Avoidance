@@ -7,7 +7,7 @@ from torch.nn import init
 class Actor(nn.Module):
     def __init__(self, inputSize, Outputsize, lr):
         super().__init__()
-        self._out_gain = 2
+        self._out_gain = 2.5
         self._norm_matrix = 1 * \
             torch.tensor([1, 1, 1, 1], dtype=torch.float32)
         # NN
@@ -25,11 +25,11 @@ class Actor(nn.Module):
             self.opt, 100, gamma=0.9, last_epoch=-1)
         self._initializeWeights()
         # zeros state value
-        self._zero_state = torch.tensor([0.0, 0.0, 0.0, 0.0]) - 2
+        self._zero_state = torch.tensor([0.0, 0.0, 0.0, 0.0])
 
     def forward(self, x):
         temp = torch.mul(x, self._norm_matrix)
-        x = torch.mul(self._out_gain, self.layers(temp))
+        x = torch.mul(self._out_gain, self.layers(temp)) - 1.5
         return x
 
     def predict(self, x):
