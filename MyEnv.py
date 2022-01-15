@@ -135,21 +135,20 @@ class MyEnv(gym.Env):
                                 y_ego_0, u_ego_0, v_ego_0,
                                 phi_ego_0, omega_ego_0,
                                 self.action, delta_ego)
+        # TODO: 原来clip的原理
+        self.u_ego_reset = torch.clip(u_ego_1, 0, self.max_u_ego)  # 自车纵向速度
         # =======================================================================================================
 
         # *************************************前车状态转移********************************************************
         acc_other = 0.0
         delta_other = 0.0
-
         x_other_0 = self.x_other  # 前车纵向位置
         y_other_0 = 0  # 前车的横向位置
         u_other_0 = self.u_other  # 前车纵向速度
         v_other_0 = 0  # 前车横向速度
         phi_other_0 = 0  # 前车偏航角
         omega_other_0 = 0  # 前车的横摆角速度
-
         self.rela_distance = self.x_other - self.x_ego  # 画图用
-
         x_other_1, y_other_1, u_other_1, v_other_1, phi_other_1, omega_other_1 = self.veh_dynamics(x_other_0,
                                                                                                    y_other_0, u_other_0,
                                                                                                    v_other_0,
@@ -158,62 +157,68 @@ class MyEnv(gym.Env):
                                                                                                    acc_other,
                                                                                                    delta_other)
         # *******************************************************************************************************
-
         self.x_ego = x_ego_1  # 自车纵向位置
         u_ego_old = self.u_ego_reset
-        # TODO: 原来clip的原理
-        self.u_ego_reset = torch.clip(u_ego_1, 0, self.max_u_ego)  # 自车纵向速度
         u_ego_1 = self.u_ego_reset  # 这需要吗
-
         # 纵距、相对速度
         d_long = x_other_1 - x_ego_1  # 纵距
         d_long = torch.tensor([d_long], dtype = torch.float32)
         u_rela = u_other_1 - u_ego_1  # 纵向相对速度
         self.u_relate = u_rela
-
         # 前车
         self.x_other = x_other_1  # 前车纵向位置
         self.u_other = u_other_1  # 前车纵向速度
-
         # oooooooooooooooooooooooooooooooooooooo reward计算和state_next构建 oooooooooooooooooooooooooooooooooooooooooo
         done = False
         centroid_gap = self.L
         # 安全距离检测
         safe_gap = d_long - centroid_gap - 0.1
-
         # ============================================================================================
         # print(f'distance = {d_long:.4f}, velocity = {u_ego_1:.4f}, u_other = {u_other_1:.4f}, acc = {self.action:.4f}')
         # ============================================================================================
-
-        # 首先判断是否碰撞
-        if safe_gap <= 0.1:  # 有改动
-            reward = torch.tensor([-80000],dtype = torch.float32) # TODO: reward的设计，不能求梯度
+        # normal case
+        done = False
+        reward = torch.tensor([0 for i in range(1)])
+        reward = 10 / ((u_ego_1 - 20 / 3.6) ** 2 + 0.1) - 1 * action ** 2 # TODO: 对action惩罚要大一点
+        # stop case
+        if u_ego_1 <= 0.5:
             done = True
-
-            self.observation = torch.cat([u_ego_1, self.action, d_long, u_rela])
-            self.state = self.observation
-            return (self.state - self.low_state )/ (self.high_state - self.low_state), reward, done, {}
-
-        # 自车速度为0后done掉
-        if u_ego_1 <= 0.5:  # 有改动
-            reward = torch.tensor([0],dtype = torch.float32)
+            reward = - u_ego_1**2/10
+        # collision case
+        if safe_gap <= 0.1:
             done = True
+            reward = 1000 * (safe_gap - 0.1) - 300
+        stateUpd = torch.tensor([u_ego_1, action, d_long, u_rela])
+        return (stateUpd - self.low_state )/ (self.high_state - self.low_state), reward, done, {}
+        # # 首先判断是否碰撞
+        # if safe_gap <= 0.1:  # 有改动
+        #     reward = torch.tensor([-80000],dtype = torch.float32) # TODO: reward的设计，不能求梯度
+        #     done = True
 
-            #reward = 0
-            # if 0.1 < d_long <= 2:
-            #r_d = 10
-            # elif 2 < d_long < 5:
-            #r_d = 5
-            # elif d_long >= 5:
-            #r_d = -1
+        #     self.observation = torch.cat([u_ego_1, self.action, d_long, u_rela])
+        #     self.state = self.observation
+        #     return (self.state - self.low_state )/ (self.high_state - self.low_state), reward, done, {}
 
-            # r_time = 20/count_wzs  # 时间越短奖励越大
+        # # 自车速度为0后done掉
+        # if u_ego_1 <= 0.5:  # 有改动
+        #     reward = torch.tensor([0],dtype = torch.float32)
+        #     done = True
 
-            #reward = r_d + r_time
+        #     #reward = 0
+        #     # if 0.1 < d_long <= 2:
+        #     #r_d = 10
+        #     # elif 2 < d_long < 5:
+        #     #r_d = 5
+        #     # elif d_long >= 5:
+        #     #r_d = -1
 
-            self.observation = torch.cat([u_ego_1, self.action, d_long, u_rela])
-            self.state = self.observation
-            return (self.state - self.low_state )/ (self.high_state - self.low_state), reward, done, {}
+        #     # r_time = 20/count_wzs  # 时间越短奖励越大
+
+        #     #reward = r_d + r_time
+
+        #     self.observation = torch.cat([u_ego_1, self.action, d_long, u_rela])
+        #     self.state = self.observation
+        #     return (self.state - self.low_state )/ (self.high_state - self.low_state), reward, done, {}
 
         # 速度惩罚项
         # r_speed = 10 if abs(u_ego_1 - 50 / 3.6) < 0.1 or abs(u_ego_1 - 0 / 3.6) < 0.1 else -10
@@ -221,12 +226,12 @@ class MyEnv(gym.Env):
         # 距离惩罚项
         # r_distance = -10 * (d_long - 8) ** 2 + 20 if abs(d_long - 8)  < 1.0 else -10
 
-        reward = 10 / ((u_ego_1 - 20 / 3.6) ** 2 + 0.1) - 1 * self.action ** 2
-        #reward = 0
-        self.observation = torch.cat([u_ego_1, self.action, d_long, u_rela])
-        self.state = self.observation
+        # reward = 10 / ((u_ego_1 - 20 / 3.6) ** 2 + 0.1) - 1 * self.action ** 2
+        # #reward = 0
+        # self.observation = torch.cat([u_ego_1, self.action, d_long, u_rela])
+        # self.state = self.observation
 
-        return (self.state - self.low_state )/ (self.high_state - self.low_state), reward, done, {}
+        # return (self.state - self.low_state )/ (self.high_state - self.low_state), reward, done, {}
 
         # ========================================================================================================
 
@@ -629,13 +634,13 @@ class MyEnv(gym.Env):
         """=========================================== 相对距离 ==============================================="""
         fig = plt.figure(2)
         plt.plot(self.T_count, self.rela_distance, '.')  # 第次对画布添加一个点，覆盖式的。
-        plt.axis([-10, 600, -5, 210])
+        plt.axis([-10, 600, -5, 150])
 
         plt.xlabel('t(0.1s)')
         plt.ylabel('Distance(m)')
         plt.title('AEB')
         # plt.pause(0.1)
-        # plt.show()
+        plt.show()
         """=================================================================================================="""
 
         return self.viewer.render(return_rgb_array=mode == 'rgb_array')
@@ -699,6 +704,22 @@ class MyEnv(gym.Env):
         stateUpd = torch.stack([u_ego_1, action, d_long, u_rela],dim = 1).reshape(state.size(0), -1)
         return (stateUpd - self.low_state )/ (self.high_state - self.low_state), reward, done, {}
 
+    def test(self,policy):
+        env = MyEnv()
+        state = env.reset()
+        print('init state', state)
+        time.sleep(2)
+        T_count = 0
+        while True:
+            [state, reward, done, _] = env.step(policy(state).detach(), T_count)
+            env.render()
+            T_count += 1
+            # time.sleep(0.05)
+            print('count: {}, state: {}, reward: {}, done: {}'.format(T_count,state.tolist(),reward.item(),done))
+            # print('state', state.tolist())
+            # print('reward', reward)
+            # print('done', done)
+
 
 def test_env():
     env = MyEnv()
@@ -707,11 +728,11 @@ def test_env():
     time.sleep(2)
     T_count = 0
     while True:
-        [state, reward, done, _] = env.step(np.array([-math.pi/60]), T_count)
+        [state, reward, done, _] = env.step(torch.tensor(-math.pi/60), T_count)
         env.render()
         T_count += 1
         # time.sleep(0.05)
-        print('state', state)
+        print('state:', state)
         print('reward', reward)
         print('done', done)
 

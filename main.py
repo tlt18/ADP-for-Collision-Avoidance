@@ -7,7 +7,7 @@ import torch
 import matplotlib.pyplot as plt
 from datetime import datetime
 import os
-
+import time
 
 # mode setting
 isTrain = 1
@@ -60,3 +60,5 @@ if isTrain:
     plt.xlabel('iteration')
     plt.ylabel('Policy Loss')
     plt.savefig(log_dir + '/policy_loss.png')
+    # render
+    env.test(policy)

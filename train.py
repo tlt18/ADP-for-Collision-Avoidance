@@ -56,7 +56,7 @@ class Train():
     def policyImprove(self, policy, value):
         for p in value.parameters():
             p.requires_grad = False
-        stateNext = self.batchData
+        stateNext = self.batchData.clone()
         valueTarget = torch.zeros(self.batchSize)
         for i in range(self.stepForward):
             control = policy.forward(stateNext)
