@@ -25,15 +25,12 @@ class Train():
             if done:
                 self.reset()
         self.batchData = torch.cat(self.batchData,dim = 0).reshape(self.batchSize,-1)
+
         
         
     def reset(self):
         self.state = self.env.reset()
-
-    def step(self, state, policy):
-        control = policy.forward(self.state).detach()
-        self.state, _, done, _ = self.env.step(control)
-        return done
+        
 
     def policyEvaluate(self, policy, value):
         valuePredict = value(self.batchData)

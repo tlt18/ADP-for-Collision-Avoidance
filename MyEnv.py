@@ -119,8 +119,6 @@ class MyEnv(gym.Env):
         self.T_count = count_wzs
         # print(count_wzs)
         # =====================================自车状态转移========================================================
-        # self.action = action[0]  # 自车纵向加速度
-        self.action = action
         delta_ego = 0  # 自车前轮转角
 
         x_ego_0 = self.x_ego  # 自车纵向位置
@@ -134,7 +132,7 @@ class MyEnv(gym.Env):
             = self.veh_dynamics(x_ego_0,
                                 y_ego_0, u_ego_0, v_ego_0,
                                 phi_ego_0, omega_ego_0,
-                                self.action, delta_ego)
+                                action, delta_ego)
         # TODO: 原来clip的原理
         self.u_ego_reset = torch.clip(u_ego_1, 0, self.max_u_ego)  # 自车纵向速度
         # =======================================================================================================

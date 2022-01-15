@@ -40,7 +40,6 @@ if isTrain:
         train.policyEvaluate(policy, value)
         # PIM
         train.policyImprove(policy, value)
-        done = train.step(policy, value)
         train.calLoss()
 
         if iterarion % config.iterationPrint == 0:
@@ -49,6 +48,8 @@ if isTrain:
         if iterarion % config.iterationSave == 0:
             pass
         iterarion += 1
+    # render
+    env.test(policy)
     os.makedirs(log_dir, exist_ok=True)
     plt.figure()
     plt.plot(range(len(train.lossValue)), train.lossValue)
@@ -60,5 +61,5 @@ if isTrain:
     plt.xlabel('iteration')
     plt.ylabel('Policy Loss')
     plt.savefig(log_dir + '/policy_loss.png')
-    # render
-    env.test(policy)
+    
+    
