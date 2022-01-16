@@ -2,11 +2,12 @@ import numpy as np
 import torch
 from config import trainConfig
 
+
 class Train():
     def __init__(self, env):
         self.env = env
-        self.lossIteraValue = np.empty([0,1])
-        self.lossIteraPolicy = np.empty([0,1])
+        self.lossIteraValue = np.empty([0, 1])
+        self.lossIteraPolicy = np.empty([0, 1])
         self.lossValue = []
         self.lossPolicy = []
         self.state = None
@@ -24,13 +25,11 @@ class Train():
             self.state, _, done, _ = self.env.step(control)
             if done:
                 self.reset()
-        self.batchData = torch.cat(self.batchData,dim = 0).reshape(self.batchSize,-1)
+        self.batchData = torch.cat(
+            self.batchData, dim=0).reshape(self.batchSize, -1)
 
-        
-        
     def reset(self):
         self.state = self.env.reset()
-        
 
     def policyEvaluate(self, policy, value):
         valuePredict = value(self.batchData)
@@ -48,7 +47,8 @@ class Train():
         torch.nn.utils.clip_grad_norm_(value.parameters(), 10.0)
         value.opt.step()
         value.scheduler.step()
-        self.lossIteraValue = np.append(self.lossIteraValue, lossValue.detach().numpy())
+        self.lossIteraValue = np.append(
+            self.lossIteraValue, lossValue.detach().numpy())
 
     def policyImprove(self, policy, value):
         for p in value.parameters():
@@ -68,11 +68,11 @@ class Train():
         torch.nn.utils.clip_grad_norm_(value.parameters(), 10.0)
         policy.opt.step()
         policy.scheduler.step()
-        self.lossIteraPolicy = np.append(self.lossIteraPolicy, lossPolicy.detach().numpy())
+        self.lossIteraPolicy = np.append(
+            self.lossIteraPolicy, lossPolicy.detach().numpy())
 
     def calLoss(self):
         self.lossValue.append(self.lossIteraValue.mean())
         self.lossPolicy.append(self.lossIteraPolicy.mean())
-        self.lossIteraValue = np.empty([0,1])
-        self.lossIteraPolicy = np.empty([0,1])
-        
+        self.lossIteraValue = np.empty([0, 1])
+        self.lossIteraPolicy = np.empty([0, 1])
